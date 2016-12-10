@@ -33,7 +33,7 @@ public class Player extends Sprite {
     private Animation deathAnimation;
 
     private float stateTimer;
-    private final static float moveSpeed = 1.1f;
+    private final static float moveSpeed = 0.95f;
     private boolean dead;
     private boolean forcing;
 
@@ -118,7 +118,7 @@ public class Player extends Sprite {
         currentState = getState();
         handleMovement(dt);
         setPosition(b2body.getPosition().x - getWidth() / 2,
-                b2body.getPosition().y - getHeight() / 2);
+                b2body.getPosition().y - getHeight() / 2 + 12/PPM);
         setRegion(getFrame(dt));
     }
 
@@ -192,7 +192,7 @@ public class Player extends Sprite {
         CircleShape shape = new CircleShape();
         shape.setRadius(6 / PPM);
         fdef.filter.categoryBits = PLAYER_BIT;
-        fdef.filter.maskBits = ZOMBIE_BIT | TRAP_BIT;
+        fdef.filter.maskBits = ZOMBIE_BIT | TRAP_BIT | WALL_BIT;
         fdef.shape = shape;
         fdef.density = 1f;
         fdef.friction = 1f;

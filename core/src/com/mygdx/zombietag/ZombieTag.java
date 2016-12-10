@@ -21,6 +21,8 @@ public class ZombieTag extends Game {
     public static final int PLAYER_BIT = 1;
     public static final int ZOMBIE_BIT = 2;
     public static final int TRAP_BIT = 4;
+    public static final int WALL_BIT = 4;
+
 
 
 	@Override
@@ -37,7 +39,6 @@ public class ZombieTag extends Game {
 	@Override
 	public void dispose () {
 		batch.dispose();
-        batch.dispose();
 	}
 
 
