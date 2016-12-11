@@ -1,7 +1,9 @@
 package com.mygdx.zombietag.Tools;
 
 import com.badlogic.gdx.physics.box2d.*;
+import com.mygdx.zombietag.Sprites.Zombie;
 import com.mygdx.zombietag.ZombieTag;
+import static com.mygdx.zombietag.ZombieTag.*;
 
 /**
  * Created by robbie on 2016/12/10.
@@ -26,6 +28,8 @@ public class WorldContactListener implements ContactListener {
 
         // Depending on what collided with what, handle the collision accordingly
         switch(cDef) {
+            case ZOMBIE_BIT | POWER_BIT:
+
         }
     }
 

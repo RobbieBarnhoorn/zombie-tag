@@ -1,6 +1,5 @@
 package com.mygdx.zombietag.Sprites;
 
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.Vector2;
@@ -11,19 +10,17 @@ import com.mygdx.zombietag.Screens.PlayScreen;
 /**
  * Created by robbie on 2016/12/10.
  */
-public abstract class Enemy extends Sprite {
+public abstract class Movable extends Sprite {
 
-    protected PlayScreen screen;
     protected World world;
+    protected PlayScreen screen;
     public Body b2body;
-    public Vector2 velocity;
 
-    public Enemy(PlayScreen screen, float x, float y) {
-        setPosition(x, y);
+    public Movable(PlayScreen screen, Vector2 spawn) {
         this.screen = screen;
         this.world = screen.getWorld();
+        setPosition(spawn.x, spawn.y);
         define();
-        velocity = new Vector2(0, 0);
     }
 
     public abstract void update(float dt);
@@ -32,6 +29,10 @@ public abstract class Enemy extends Sprite {
 
     public void draw(Batch batch) {
         super.draw(batch);
+    }
+
+    public void push(float force, Vector2 dir) {
+        b2body.applyForceToCenter(dir.scl(force), true);
     }
 
 

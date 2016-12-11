@@ -16,43 +16,57 @@ import static com.mygdx.zombietag.ZombieTag.*;
  */
 public class Player extends Sprite {
 
-    public enum State {IDLE, RUNNING, DEAD, FORCING}
+    public enum State {IDLE, RUNNING, DEAD, POWERING}
     public State currentState;
     public State previousState;
 
     public enum Movement {LEFT, RIGHT, UP, DOWN,}
     public Array<Movement> movement;
 
-    public World world;
+
+    public  PlayScreen screen;
+    private World world;
     public Body b2body;
 
-    private Animation leftRunAnimation;
-    private Animation rightRunAnimation;
-    private Animation upRunAnimation;
-    private Animation downRunAnimation;
-    private Animation deathAnimation;
+    // Character animations
+    public Animation leftRunAnimation;
+    public Animation rightRunAnimation;
+    public Animation upRunAnimation;
+    public Animation downRunAnimation;
+    public Animation currentAnimation;
+    public Animation previousAnimation;
+    public Animation deathAnimation;
+
+    // Power animations
+    private Animation symbolAnimation;
+    private Power power;
 
     private float stateTimer;
     private final static float moveSpeed = 0.95f;
     private boolean dead;
-    private boolean forcing;
+    private boolean powering;
 
     public Player(PlayScreen screen, float x, float y) {
         setPosition(x, y);
+        this.screen = screen;
         this.world = screen.getWorld();
         currentState = State.IDLE;
         previousState = State.IDLE;
         stateTimer = 0;
         dead = false;
+        power = null;
 
         movement = new Array<Movement>();
 
         Texture movementSheet = new Texture("sprites/player/player_movement.png");
+        Texture symbolSheet = new Texture("powers/power_symbol.png");
         //Texture deathSheet = new Texture("sprites/player/player_death");
 
         Array<TextureRegion> frames = new Array<TextureRegion>();
 
-        // Create running animations
+
+        // RUNNING ANIMATIONS
+
         for (int i = 0; i < 4; i++) {
             frames.add(new TextureRegion(movementSheet, i*32, 32, 32, 32));
         }
@@ -76,11 +90,24 @@ public class Player extends Sprite {
         }
         downRunAnimation = new Animation(1/12f, frames);
 
-        // Create deathAnimation animation
+        // DEATH ANIMATION
+
         /*for (int i = 0; i < 3; i++) {
             frames.add(new TextureRegion(deathSheet, i*32, 0, 32, 32));
         }*/
         //deathAnimation = new Animation(1/12f, frames);
+
+
+
+        // POWER SYMBOL ANIMATION
+
+        frames.clear();
+        for (int i = 0; i < 4; i++) {
+            frames.add(new TextureRegion(symbolSheet, i*32, 0, 32, 32));
+        }
+        symbolAnimation = new Animation(1/12f, frames);
+
+
 
         // Define the player in Box2D
         definePlayer();
@@ -88,6 +115,8 @@ public class Player extends Sprite {
         // Set initial values for the textures location, width and height
         setBounds(0, 0, 32/PPM, 32/PPM);
         setRegion(downRunAnimation.getKeyFrame(stateTimer, true));
+        currentAnimation = downRunAnimation;
+        previousAnimation = currentAnimation;
     }
 
     public void handleMovement(float dt) {
@@ -116,21 +145,53 @@ public class Player extends Sprite {
     public void update(float dt) {
         // Get monkeys current state
         currentState = getState();
+        if (power != null) power.update(dt);
         handleMovement(dt);
         setPosition(b2body.getPosition().x - getWidth() / 2,
                 b2body.getPosition().y - getHeight() / 2 + 12/PPM);
         setRegion(getFrame(dt));
     }
 
+    public void push() {
+        if (power == null) {
+            System.out.println("Creating power");
+            Vector2 dir = new Vector2(0, 0);
+            if (currentAnimation == rightRunAnimation) {
+                dir.add(1, 0);
+            }
+            else if (currentAnimation == leftRunAnimation) {
+                dir.add(-1, 0);
+            }
+            else if (currentAnimation == upRunAnimation) {
+                dir.add(0, 1);
+            }
+            else if (currentAnimation == downRunAnimation) {
+                dir.add(0, -1);
+            }
+            System.out.println("Movement size: " + movement.size);
+            dir.scl(1 / dir.len());
+
+            System.out.println("X: " + dir.x);
+            System.out.println("Y: " + dir.y);
+            System.out.println();
+
+            power = new Power(screen, this, b2body.getPosition(), dir);
+        }
+    }
+
+    public void pull() {
+
+    }
+
     public State getState(){
         if(dead) {
             return State.DEAD;
         }
+        if (powering) {
+            return State.POWERING;
+        }
         if (b2body.getLinearVelocity().x == 0 && b2body.getLinearVelocity().y == 0) {
             return State.IDLE;
-        }
-        if (forcing) {
-            return State.FORCING;
         }
         return State.RUNNING;
     }
@@ -142,26 +203,35 @@ public class Player extends Sprite {
         switch(currentState) {
             /*case DEAD:
                 region = deathAnimation.getKeyFrame(stateTimer);
-                break;
-            case FORCING:
-                region = forceAnimation.getKeyFrame(stateTimer);
                 break;*/
+            case POWERING:
             case RUNNING:
-                if (b2body.getLinearVelocity().x > 0.01f) {
-                    region = rightRunAnimation.getKeyFrame(stateTimer, true);
-                }
-                else if (b2body.getLinearVelocity().x < -0.01f) {
-                    region = leftRunAnimation.getKeyFrame(stateTimer, true);
-                }
-                else if (b2body.getLinearVelocity().y > 0.01f) {
-                    region = upRunAnimation.getKeyFrame(stateTimer, true);
+                if (Math.abs(b2body.getLinearVelocity().len()) > 0.1) {
+                    if (b2body.getLinearVelocity().x > 0.01f) {
+                        region = rightRunAnimation.getKeyFrame(stateTimer, true);
+                        previousAnimation = currentAnimation;
+                        currentAnimation = rightRunAnimation;
+                    } else if (b2body.getLinearVelocity().x < -0.01f) {
+                        region = leftRunAnimation.getKeyFrame(stateTimer, true);
+                        previousAnimation = currentAnimation;
+                        currentAnimation = leftRunAnimation;
+                    } else if (b2body.getLinearVelocity().y > 0.01f) {
+                        region = upRunAnimation.getKeyFrame(stateTimer, true);
+                        previousAnimation = currentAnimation;
+                        currentAnimation = upRunAnimation;
+                    } else {
+                        region = downRunAnimation.getKeyFrame(stateTimer, true);
+                        previousAnimation = currentAnimation;
+                        currentAnimation = downRunAnimation;
+                    }
                 }
                 else {
-                    region = downRunAnimation.getKeyFrame(stateTimer, true);
+                    region = previousAnimation.getKeyFrame(stateTimer, true);
                 }
                 break;
+            case IDLE:
             default:
-                region = downRunAnimation.getKeyFrame(stateTimer);
+                region = previousAnimation.getKeyFrame(stateTimer, true);
         }
 
         //if the current state is the same as the previous state increase the state timer.
@@ -201,7 +271,9 @@ public class Player extends Sprite {
 
     public void draw(Batch batch) {
         super.draw(batch);
+        if (power != null) power.draw(batch);
     }
+
 
     public void kill() {
         dead = true;
@@ -209,5 +281,9 @@ public class Player extends Sprite {
 
     public boolean isDead() {
         return dead;
+    }
+
+    public void removePower() {
+        power = null;
     }
 }

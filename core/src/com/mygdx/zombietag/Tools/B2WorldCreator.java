@@ -33,7 +33,7 @@ public class B2WorldCreator {
         bdef = new BodyDef();
         shape = new PolygonShape();
 
-        //createWalls();
+        createWalls();
         createPlayer();
     }
 
@@ -54,7 +54,7 @@ public class B2WorldCreator {
     }
 
     private void createPlayer() {
-        MapObject object = map.getLayers().get(1).getObjects().getByType(RectangleMapObject.class).get(0);
+        MapObject object = map.getLayers().get(2).getObjects().getByType(RectangleMapObject.class).get(0);
         Rectangle rect = ((RectangleMapObject)object).getRectangle();
         player = new Player(screen, (rect.getX() + rect.getWidth()/2)/PPM,
                 (rect.getY() + rect.getHeight()/2)/PPM);

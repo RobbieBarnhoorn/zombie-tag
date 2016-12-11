@@ -1,16 +1,17 @@
 package com.mygdx.zombietag.Sprites;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.math.Vector2;
 import com.mygdx.zombietag.Screens.PlayScreen;
 
 /**
  * Created by robbie on 2016/12/10.
  */
-public class BigZombie extends Enemy {
+public class BigZombie extends Movable {
 
 
-    public BigZombie(PlayScreen screen, float x, float y) {
-        super(screen, x, y);
+    public BigZombie(PlayScreen screen, Vector2 spawn) {
+        super(screen, spawn);
     }
 
     @Override
