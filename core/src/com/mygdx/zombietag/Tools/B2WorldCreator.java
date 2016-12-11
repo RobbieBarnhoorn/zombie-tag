@@ -35,6 +35,8 @@ public class B2WorldCreator {
 
         createWalls();
         createPlayer();
+        createPits();
+        createGroundSpikes();
     }
 
     private void createWalls() {
@@ -58,6 +60,38 @@ public class B2WorldCreator {
         Rectangle rect = ((RectangleMapObject)object).getRectangle();
         player = new Player(screen, (rect.getX() + rect.getWidth()/2)/PPM,
                 (rect.getY() + rect.getHeight()/2)/PPM);
+    }
+
+    private void createPits() {
+        for (MapObject object : map.getLayers().get(3).getObjects().getByType(RectangleMapObject.class)) {
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+
+            bdef.type = BodyDef.BodyType.StaticBody;
+            bdef.position.set((rect.getX() + rect.getWidth() / 2) / PPM, (rect.getY() + rect.getHeight() / 2) / PPM);
+
+            body = world.createBody(bdef);
+
+            shape.setAsBox(rect.getWidth() / 2 / PPM, rect.getHeight() / 2 / PPM);
+            fdef.shape = shape;
+            fdef.filter.categoryBits = PIT_BIT;
+            body.createFixture(fdef);
+        }
+    }
+
+    private void createGroundSpikes() {
+        for (MapObject object : map.getLayers().get(4).getObjects().getByType(RectangleMapObject.class)) {
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+
+            bdef.type = BodyDef.BodyType.StaticBody;
+            bdef.position.set((rect.getX() + rect.getWidth() / 2) / PPM, (rect.getY() + rect.getHeight() / 2) / PPM);
+
+            body = world.createBody(bdef);
+
+            shape.setAsBox(rect.getWidth() / 2 / PPM, rect.getHeight() / 2 / PPM);
+            fdef.shape = shape;
+            fdef.filter.categoryBits = TRAP_BIT;
+            body.createFixture(fdef);
+        }
     }
 
     public Player getPlayer() {

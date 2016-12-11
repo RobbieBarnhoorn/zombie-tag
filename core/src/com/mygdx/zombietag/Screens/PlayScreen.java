@@ -21,7 +21,6 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.zombietag.Sprites.Movable;
 import com.mygdx.zombietag.Sprites.Player;
-import com.mygdx.zombietag.Sprites.Power;
 import com.mygdx.zombietag.Sprites.Zombie;
 import com.mygdx.zombietag.Tools.B2WorldCreator;
 import com.mygdx.zombietag.Tools.WorldContactListener;
@@ -57,7 +56,7 @@ public class PlayScreen implements Screen {
 
     // Sprites
     private Player player;
-    private Array<Movable> enemies;
+    private Array<Zombie> zombies;
 
     // Variables for smooth panning of camera
     private final static float cameraSpeed = 0.06f;
@@ -104,11 +103,11 @@ public class PlayScreen implements Screen {
         creator = new B2WorldCreator(this);
 
         player = creator.getPlayer();
-        enemies = new Array<Movable>();
-        for(int i = 0; i < 0; i++) {
+        zombies = new Array<Zombie>();
+        for(int i = 0; i < 20; i++) {
             Vector2 pos = new Vector2(((float)(Math.random()*0.6f + 0.7f)*player.b2body.getPosition().x),
                     (float)(Math.random()*0.6f + 0.7f)*player.b2body.getPosition().y);
-            enemies.add(new Zombie(this, pos));
+            zombies.add(new Zombie(this, pos));
         }
 
         world.setContactListener(new WorldContactListener(game));
@@ -128,12 +127,7 @@ public class PlayScreen implements Screen {
         //control our player
         if(player.currentState != Player.State.DEAD) {
             if (Gdx.input.isKeyPressed(Input.Keys.X) || Gdx.input.isKeyPressed(Input.Keys.J)) {
-                System.out.println("PUSHING");
                 player.push();
-            }
-            else if (Gdx.input.isKeyPressed(Input.Keys.C) || Gdx.input.isKeyPressed(Input.Keys.K)) {
-                System.out.println("PULLING");
-                player.pull();
             }
             if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
                 player.movement.add(Player.Movement.UP);
@@ -165,8 +159,11 @@ public class PlayScreen implements Screen {
         player.update(dt);
 
         // Update the enemies
-        for(Movable enemy : enemies) {
-            enemy.update(dt);
+        for(Zombie zombie: zombies) {
+            if (zombie.destroyed()) {
+                zombies.removeValue(zombie, true);
+            }
+            else zombie.update(dt);
         }
 
         // Make our camera track our players position smoothly
@@ -214,18 +211,18 @@ public class PlayScreen implements Screen {
         game.batch.begin();
 
         // Draw the player
-        player.draw(game.batch);
+        if (!player.isDestroyed()) player.draw(game.batch);
 
         // Draw the enemies
-        for (Movable enemy : enemies) {
-            enemy.draw(game.batch);
+        for (Zombie zombie: zombies) {
+            zombie.draw(game.batch);
         }
 
 
         game.batch.end();
 
         // Render our Box2DDebugLines
-        b2dr.render(world, gamecam.combined);
+        //b2dr.render(world, gamecam.combined);
 
 
         // Render our vision lines
@@ -282,8 +279,8 @@ public class PlayScreen implements Screen {
         return player;
     }
 
-    public Array<Movable> getEnemies() {
-        return enemies;
+    public Array<Zombie> getEnemies() {
+        return zombies;
     }
 
     public void addRay(Vector2 start, Vector2 end) {

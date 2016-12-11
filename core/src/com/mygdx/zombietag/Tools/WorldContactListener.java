@@ -1,6 +1,9 @@
 package com.mygdx.zombietag.Tools;
 
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.mygdx.zombietag.Sprites.Player;
+import com.mygdx.zombietag.Sprites.Power;
 import com.mygdx.zombietag.Sprites.Zombie;
 import com.mygdx.zombietag.ZombieTag;
 import static com.mygdx.zombietag.ZombieTag.*;
@@ -29,7 +32,49 @@ public class WorldContactListener implements ContactListener {
         // Depending on what collided with what, handle the collision accordingly
         switch(cDef) {
             case ZOMBIE_BIT | POWER_BIT:
-
+                if (fixA.getUserData() instanceof Zombie) {
+                    Vector2 dir = new Vector2(((Power)fixB.getUserData()).b2body.getLinearVelocity());
+                    dir.scl(1/dir.len());
+                    ((Zombie)fixA.getUserData()).push(2, dir);
+                }
+                else {
+                    Vector2 dir = new Vector2(((Power)fixA.getUserData()).b2body.getLinearVelocity());
+                    dir.scl(1/dir.len());
+                    ((Zombie)fixB.getUserData()).push(2, dir);
+                }
+                break;
+            case ZOMBIE_BIT | PIT_BIT:
+                if (fixA.getUserData() instanceof Zombie) {
+                    ((Zombie)fixA.getUserData()).setToDestroy();
+                }
+                else {
+                    ((Zombie)fixB.getUserData()).setToDestroy();
+                }
+                break;
+            case ZOMBIE_BIT | TRAP_BIT:
+                if (fixA.getUserData() instanceof Zombie) {
+                    ((Zombie)fixA.getUserData()).setToDestroy();
+                }
+                else {
+                    ((Zombie)fixB.getUserData()).setToDestroy();
+                }
+                break;
+            case PLAYER_BIT | PIT_BIT:
+                if (fixA.getUserData() instanceof Player) {
+                    ((Player)fixA.getUserData()).setToDestroy();
+                }
+                else {
+                    ((Player)fixB.getUserData()).setToDestroy();
+                }
+                break;
+            case PLAYER_BIT | TRAP_BIT:
+                if (fixA.getUserData() instanceof Player) {
+                    ((Player)fixA.getUserData()).setToDestroy();
+                }
+                else {
+                    ((Player)fixB.getUserData()).setToDestroy();
+                }
+                break;
         }
     }
 

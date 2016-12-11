@@ -39,12 +39,14 @@ public class Player extends Sprite {
 
     // Power animations
     private Animation symbolAnimation;
+    public float symbolTime;
     private Power power;
+    private float powerCooldown;
 
     private float stateTimer;
     private final static float moveSpeed = 0.95f;
-    private boolean dead;
-    private boolean powering;
+    private boolean setToDestroy;
+    private boolean destroyed;
 
     public Player(PlayScreen screen, float x, float y) {
         setPosition(x, y);
@@ -53,8 +55,11 @@ public class Player extends Sprite {
         currentState = State.IDLE;
         previousState = State.IDLE;
         stateTimer = 0;
-        dead = false;
+        symbolTime = 0;
+        setToDestroy = false;
+        destroyed = false;
         power = null;
+        powerCooldown = 0;
 
         movement = new Array<Movement>();
 
@@ -102,10 +107,10 @@ public class Player extends Sprite {
         // POWER SYMBOL ANIMATION
 
         frames.clear();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 20; i++) {
             frames.add(new TextureRegion(symbolSheet, i*32, 0, 32, 32));
         }
-        symbolAnimation = new Animation(1/12f, frames);
+        symbolAnimation = new Animation(1/42f, frames);
 
 
 
@@ -143,18 +148,25 @@ public class Player extends Sprite {
     }
 
     public void update(float dt) {
-        // Get monkeys current state
-        currentState = getState();
-        if (power != null) power.update(dt);
-        handleMovement(dt);
-        setPosition(b2body.getPosition().x - getWidth() / 2,
-                b2body.getPosition().y - getHeight() / 2 + 12/PPM);
-        setRegion(getFrame(dt));
+        if (setToDestroy && !destroyed) {
+            world.destroyBody(b2body);
+            destroyed = true;
+        }
+        else if (!destroyed){
+            // Get monkeys current state
+            symbolTime += dt;
+            powerCooldown -= dt;
+            currentState = getState();
+            if (power != null) power.update(dt);
+            handleMovement(dt);
+            setPosition(b2body.getPosition().x - getWidth() / 2,
+                    b2body.getPosition().y - getHeight() / 2 + 12 / PPM);
+            setRegion(getFrame(dt));
+        }
     }
 
     public void push() {
-        if (power == null) {
-            System.out.println("Creating power");
+        if (power == null && powerCooldown <= 0) {
             Vector2 dir = new Vector2(0, 0);
             if (currentAnimation == rightRunAnimation) {
                 dir.add(1, 0);
@@ -168,27 +180,15 @@ public class Player extends Sprite {
             else if (currentAnimation == downRunAnimation) {
                 dir.add(0, -1);
             }
-            System.out.println("Movement size: " + movement.size);
             dir.scl(1 / dir.len());
-
-            System.out.println("X: " + dir.x);
-            System.out.println("Y: " + dir.y);
-            System.out.println();
-
             power = new Power(screen, this, b2body.getPosition(), dir);
+            powerCooldown = 3.5f;
         }
-    }
-
-    public void pull() {
-
     }
 
     public State getState(){
-        if(dead) {
+        if(destroyed) {
             return State.DEAD;
-        }
-        if (powering) {
-            return State.POWERING;
         }
         if (b2body.getLinearVelocity().x == 0 && b2body.getLinearVelocity().y == 0) {
             return State.IDLE;
@@ -262,7 +262,7 @@ public class Player extends Sprite {
         CircleShape shape = new CircleShape();
         shape.setRadius(6 / PPM);
         fdef.filter.categoryBits = PLAYER_BIT;
-        fdef.filter.maskBits = ZOMBIE_BIT | TRAP_BIT | WALL_BIT;
+        fdef.filter.maskBits = ZOMBIE_BIT | TRAP_BIT | WALL_BIT | PIT_BIT;
         fdef.shape = shape;
         fdef.density = 1f;
         fdef.friction = 1f;
@@ -271,16 +271,23 @@ public class Player extends Sprite {
 
     public void draw(Batch batch) {
         super.draw(batch);
-        if (power != null) power.draw(batch);
+        if (power != null) {
+            power.draw(batch);
+            batch.draw(symbolAnimation.getKeyFrame(symbolTime, false), b2body.getPosition().x - 10/PPM,
+                    b2body.getPosition().y + 21/PPM, 24/PPM, 24/PPM);
+        }
+        else {
+            symbolTime = 0;
+        }
     }
 
 
-    public void kill() {
-        dead = true;
+    public void setToDestroy() {
+        setToDestroy = true;
     }
 
-    public boolean isDead() {
-        return dead;
+    public boolean isDestroyed() {
+        return destroyed;
     }
 
     public void removePower() {

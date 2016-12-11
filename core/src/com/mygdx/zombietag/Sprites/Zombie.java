@@ -34,7 +34,8 @@ public class Zombie extends Movable {
     private final static float SPREAD_FACTOR = 300/PPM;
     private Vector2 chaseOffset;
     private float chaseTimer;
-    private boolean dead;
+    private boolean setToDestroy;
+    private boolean destroyed;
 
     public Zombie(PlayScreen screen, Vector2 spawn) {
         super(screen, spawn);
@@ -43,7 +44,8 @@ public class Zombie extends Movable {
         stateTimer = 0;
         chaseOffset = new Vector2((float)Math.random()*SPREAD_FACTOR - 0.5f*SPREAD_FACTOR,
                 (float)Math.random()*SPREAD_FACTOR - 0.5f*SPREAD_FACTOR);
-        dead = false;
+        setToDestroy = false;
+        destroyed = false;
 
         movement = new Array<Movement>();
 
@@ -117,16 +119,22 @@ public class Zombie extends Movable {
     }
 
     public void update(float dt) {
-        // Get current state
-        currentState = getState();
-        handleMovement(dt);
-        setPosition(b2body.getPosition().x - getWidth() / 2,
-                b2body.getPosition().y - getHeight() / 2 + 6/PPM);
-        setRegion(getFrame(dt));
+        if (setToDestroy && !destroyed) {
+            world.destroyBody(b2body);
+            destroyed = true;
+        }
+        else if (!destroyed) {
+            // Get current state
+            currentState = getState();
+            handleMovement(dt);
+            setPosition(b2body.getPosition().x - getWidth() / 2,
+                    b2body.getPosition().y - getHeight() / 2 + 6/PPM);
+            setRegion(getFrame(dt));
+        }
     }
 
     public State getState(){
-        if(dead) {
+        if(destroyed) {
             return State.DEAD;
         }
         return State.WANDERING;
@@ -201,7 +209,7 @@ public class Zombie extends Movable {
         CircleShape shape = new CircleShape();
         shape.setRadius(5 / PPM);
         fdef.filter.categoryBits = ZOMBIE_BIT;
-        fdef.filter.maskBits = PLAYER_BIT| TRAP_BIT | WALL_BIT | ZOMBIE_BIT | POWER_BIT;
+        fdef.filter.maskBits = PLAYER_BIT| TRAP_BIT | WALL_BIT | ZOMBIE_BIT | POWER_BIT | PIT_BIT;
         fdef.shape = shape;
         fdef.density = 1f;
         fdef.friction = 1f;
@@ -212,16 +220,12 @@ public class Zombie extends Movable {
         super.draw(batch);
     }
 
-    public void kill() {
-        dead = true;
-    }
-
-    public boolean isDead() {
-        return dead;
-    }
-
     public void setToDestroy() {
+        setToDestroy = true;
+    }
 
+    public boolean destroyed() {
+        return destroyed;
     }
 
 }

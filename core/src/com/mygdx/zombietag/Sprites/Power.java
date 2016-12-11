@@ -62,6 +62,7 @@ public class Power extends Movable {
             world.destroyBody(b2body);
             dispose();
             player.removePower();
+            player.symbolTime = 0;
             destroyed = true;
         }
         else if (!destroyed) {
