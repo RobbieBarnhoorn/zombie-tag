@@ -27,9 +27,9 @@ public class Zombie extends Movable {
     private Animation rightRunAnimation;
     private Animation upRunAnimation;
     private Animation downRunAnimation;
-    private Animation deathAnimation;
+    public Animation deathAnimation;
 
-    private float stateTimer;
+    public float stateTimer;
     private final static float MOVE_SPEED = 0.45f;
     private final static float SPREAD_FACTOR = 300/PPM;
     private Vector2 chaseOffset;
@@ -53,7 +53,7 @@ public class Zombie extends Movable {
         Texture rightRunSheet = new Texture("sprites/zombies/zombie_right.png");
         Texture upRunSheet = new Texture("sprites/zombies/zombie_up.png");
         Texture downRunSheet = new Texture("sprites/zombies/zombie_down.png");
-        //Texture deathSheet = new Texture("sprites/player/player_death");
+        Texture deathSheet = new Texture("sprites/zombies/zombie_death.png");
 
         Array<TextureRegion> frames = new Array<TextureRegion>();
 
@@ -82,10 +82,11 @@ public class Zombie extends Movable {
         downRunAnimation = new Animation(1/12f, frames);
 
         // Create deathAnimation animation
-        /*for (int i = 0; i < 3; i++) {
+        frames.clear();
+        for (int i = 0; i < 15; i++) {
             frames.add(new TextureRegion(deathSheet, i*32, 0, 32, 32));
-        }*/
-        //deathAnimation = new Animation(1/12f, frames);
+        }
+        deathAnimation = new Animation(1/8f, frames);
 
         // Set initial values for the textures location, width and height
         setBounds(0, 0, 32/PPM, 32/PPM);
@@ -119,36 +120,48 @@ public class Zombie extends Movable {
     }
 
     public void update(float dt) {
+        stateTimer += dt;
         if (setToDestroy && !destroyed) {
             world.destroyBody(b2body);
+            stateTimer = 0;
             destroyed = true;
         }
+        else if (destroyed && stateTimer < deathAnimation.getAnimationDuration()) {
+            setRegion(getFrame());
+        }
         else if (!destroyed) {
-            // Get current state
-            currentState = getState();
             handleMovement(dt);
             setPosition(b2body.getPosition().x - getWidth() / 2,
                     b2body.getPosition().y - getHeight() / 2 + 6/PPM);
-            setRegion(getFrame(dt));
+            setRegion(getFrame());
+
+            if (currentState != previousState) {
+                stateTimer = 0;
+            }
+
+            // Update previous state
+            previousState = currentState;
         }
     }
 
     public State getState(){
-        if(destroyed) {
+        if(setToDestroy || destroyed) {
             return State.DEAD;
         }
         return State.WANDERING;
     }
 
-    public TextureRegion getFrame(float dt) {
+    public TextureRegion getFrame() {
+
+        currentState = getState();
         TextureRegion region;
 
         // Get keyFrame corresponding to currentState
         switch(currentState) {
-            /*case DEAD:
-                region = deathAnimation.getKeyFrame(stateTimer);
+            case DEAD:
+                region = deathAnimation.getKeyFrame(stateTimer, true);
                 break;
-            case ATTACKING:
+            /*case ATTACKING:
                 region = attackAnimation.getKeyFrame(stateTimer);
                 break;*/
             case CHASING:
@@ -179,15 +192,7 @@ public class Zombie extends Movable {
                 break;
             default:
                 region = downRunAnimation.getKeyFrame(stateTimer, true);
-        }
-
-        //if the current state is the same as the previous state increase the state timer.
-        //otherwise the state has changed and we need to reset timer.
-        if (currentState == previousState) {
-            stateTimer += dt;
-        }
-        else {
-            stateTimer = 0;
+                break;
         }
 
         //update previous state before we update the current state

@@ -160,10 +160,10 @@ public class PlayScreen implements Screen {
 
         // Update the enemies
         for(Zombie zombie: zombies) {
-            if (zombie.destroyed()) {
+            /*if (zombie.destroyed() && zombie.stateTimer < zombie.deathAnimation.getAnimationDuration()) {
                 zombies.removeValue(zombie, true);
-            }
-            else zombie.update(dt);
+            }*/
+            zombie.update(dt);
         }
 
         // Make our camera track our players position smoothly
@@ -229,6 +229,11 @@ public class PlayScreen implements Screen {
        /* for (int i = 0; i < p1Array.size; i++) {
             drawDebugLine(p1Array.get(i), p2Array.get(i), gamecam.combined);
         }*/
+
+        if (player.isDestroyed()) {
+            dispose();
+            game.setScreen(new GameOverScreen(game));
+        }
     }
 
     @Override
@@ -264,7 +269,7 @@ public class PlayScreen implements Screen {
         renderer.dispose();
         world.dispose();
         b2dr.dispose();
-        game.music.dispose();
+        //game.music.dispose();
     }
 
     public World getWorld() {
@@ -296,15 +301,6 @@ public class PlayScreen implements Screen {
         debugRenderer.line(start, end);
         debugRenderer.end();
         Gdx.gl.glLineWidth(1);
-    }
-
-    public Vector2 getMousePos() {
-        return new Vector2(Gdx.input.getX(), Gdx.input.getY());
-    }
-
-    public Vector2 getMousePosInGameWorld() {
-        Vector3 temp = gamecam.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
-        return new Vector2(temp.x, temp.y);
     }
 
 }
