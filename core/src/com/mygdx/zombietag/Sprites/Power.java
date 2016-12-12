@@ -33,7 +33,7 @@ public class Power extends Movable {
         tex = new Texture("powers/wave.png");
         Array<TextureRegion> frames = new Array<TextureRegion>();
 
-        for (int i = 0; i < 13; i++) {
+        for (int i = 0; i < 16; i++) {
             frames.add(new TextureRegion(tex, 0, i*32, 48, 32));
         }
         wave = new Animation(1/24f, frames);

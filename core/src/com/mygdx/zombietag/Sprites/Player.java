@@ -1,5 +1,6 @@
 package com.mygdx.zombietag.Sprites;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -9,6 +10,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 import com.mygdx.zombietag.Screens.PlayScreen;
+import com.mygdx.zombietag.ZombieTag;
+
 import static com.mygdx.zombietag.ZombieTag.*;
 
 /**
@@ -28,6 +31,7 @@ public class Player extends Sprite {
     private World world;
     public Body b2body;
     public float health;
+    private float treeTime;
     public float mana;
 
     // Character animations
@@ -44,6 +48,10 @@ public class Player extends Sprite {
     public float symbolTime;
     private Power power;
     private float powerCooldown;
+
+    private Sound footsteps;
+    private Sound powerSymbol;
+    Sound tree;
 
     private float stateTimer;
     private final static float moveSpeed = 0.95f;
@@ -120,6 +128,13 @@ public class Player extends Sprite {
 
 
 
+        footsteps = ZombieTag.manager.get("audio/sounds/player_walk.mp3", Sound.class);
+        footsteps.loop();
+        footsteps.play(1);
+
+        powerSymbol = ZombieTag.manager.get("audio/sounds/power_symbol.mp3", Sound.class);
+        tree = ZombieTag.manager.get("audio/sounds/tree.mp3", Sound.class);
+
         // Define the player in Box2D
         definePlayer();
 
@@ -146,8 +161,8 @@ public class Player extends Sprite {
             if (movement.get(i) == Movement.DOWN) {
                 desiredVel.y -= moveSpeed;
             }
-
         }
+
         Vector2 velChange = new Vector2(desiredVel.x - vel.x, desiredVel.y - vel.y);
         Vector2 force = new Vector2(b2body.getMass() * velChange.x / dt, b2body.getMass() * velChange.y / dt); // f = mv/t
         b2body.applyForceToCenter(new Vector2(force.x, force.y), true);
@@ -170,8 +185,9 @@ public class Player extends Sprite {
         else if (!destroyed){
             // Get monkeys current state
             symbolTime += dt;
+            treeTime -= dt;
             powerCooldown -= dt;
-            if (health <= 0) {
+            if (health <= 0.2) { // 0.2 cuz i messed up and ludum dare stress
                 setToDestroy();
             }
             if (mana < 1) {
@@ -206,6 +222,7 @@ public class Player extends Sprite {
             }
             dir.scl(1 / dir.len());
             power = new Power(screen, this, b2body.getPosition(), dir);
+            powerSymbol.play();
             powerCooldown = 3.5f;
         }
     }
@@ -214,7 +231,7 @@ public class Player extends Sprite {
         if(setToDestroy || destroyed) {
             return State.DEAD;
         }
-        if (b2body.getLinearVelocity().x == 0 && b2body.getLinearVelocity().y == 0) {
+        if (Math.abs(b2body.getLinearVelocity().x) < 0.1 && Math.abs(b2body.getLinearVelocity().y) < 0.1) {
             return State.IDLE;
         }
         return State.RUNNING;
@@ -286,7 +303,7 @@ public class Player extends Sprite {
         CircleShape shape = new CircleShape();
         shape.setRadius(6 / PPM);
         fdef.filter.categoryBits = PLAYER_BIT;
-        fdef.filter.maskBits = ZOMBIE_BIT | TRAP_BIT | WALL_BIT | PIT_BIT;
+        fdef.filter.maskBits = ZOMBIE_BIT | TRAP_BIT | WALL_BIT | PIT_BIT | TREE_BIT;
         fdef.shape = shape;
         fdef.density = 1f;
         fdef.friction = 1f;
@@ -322,11 +339,23 @@ public class Player extends Sprite {
         this.health -= value;
     }
 
+    public void increaseHealth(float value) {
+        if (treeTime <= 0) {
+            this.health += value;
+            tree.play();
+            treeTime = 35;
+        }
+    }
+
     public float getHealth() {
         return health;
     }
 
     public float getMana() {
         return mana;
+    }
+
+    public boolean isRemovable() {
+        return removable;
     }
 }

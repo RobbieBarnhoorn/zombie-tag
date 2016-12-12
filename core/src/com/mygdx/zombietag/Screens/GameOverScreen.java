@@ -52,10 +52,9 @@ public class GameOverScreen implements Screen {
 
         stage.addActor(table);
 
-        /*music = Gdx.audio.newMusic(Gdx.files.internal("music/game_over.mp3"));
-        music.setLooping(false);
-        music.setVolume(0.3f);
-        music.play();*/
+        music = ZombieTag.manager.get("audio/music/game_over.mp3", Music.class);
+        music.setVolume(0.2f);
+        music.play();
     }
 
 
@@ -105,6 +104,6 @@ public class GameOverScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        //music.dispose();
+        music.dispose();
     }
 }

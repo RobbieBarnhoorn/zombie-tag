@@ -120,7 +120,7 @@ public class Hud implements Disposable{
             else if (player.getHealth() <= 0.8) {
                 healthTable.add(new Image(healthTextures[0][2]));
             }
-            else if (player.getHealth() < 1) {
+            else if (player.getHealth() <= 1) {
                 healthTable.add(new Image(healthTextures[0][1]));
             }
             else {

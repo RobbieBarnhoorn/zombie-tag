@@ -3,6 +3,7 @@ package com.mygdx.zombietag.Screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -14,13 +15,11 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
-import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.mygdx.zombietag.Sprites.Player;
-import com.mygdx.zombietag.Sprites.Zombie;
+import com.mygdx.zombietag.Sprites.*;
 import com.mygdx.zombietag.Tools.B2WorldCreator;
 import com.mygdx.zombietag.Tools.WorldContactListener;
 import com.mygdx.zombietag.ZombieTag;
@@ -36,7 +35,11 @@ public class PlayScreen implements Screen {
     private OrthographicCamera gamecam;
     private Viewport gameport;
     public Hud hud;
-    private float gameTime;
+    private float spawnTimer;
+    private float numEnemies;
+    private float standardProportion;
+    private float strawHatProportion;
+    private float bossProportion;
 
     // Tiled map variables
     private TiledMap map;
@@ -53,10 +56,12 @@ public class PlayScreen implements Screen {
     private World world;
     private Box2DDebugRenderer b2dr;
     private B2WorldCreator creator;
+    Music music;
 
     // Sprites
     private Player player;
     private Array<Zombie> zombies;
+    public Body hitBody;
 
     // Variables for smooth panning of camera
     private final static float cameraSpeed = 0.06f;
@@ -67,6 +72,16 @@ public class PlayScreen implements Screen {
     public Array<Vector2> p1Array;
     public Array<Vector2> p2Array;
 
+    QueryCallback callback = new QueryCallback() {
+        @Override
+        public boolean reportFixture(Fixture fixture) {
+            // if the hit point is inside the fixture of the body
+            // we report it
+            hitBody = fixture.getBody();
+            return true;
+        }
+    };
+
     public PlayScreen(ZombieTag game) {
         this.game = game;
 
@@ -76,7 +91,14 @@ public class PlayScreen implements Screen {
 
         // FitViewport maintains virtual aspect ratio, despite screen dimensions
         gameport = new FitViewport(V_WIDTH/PPM, V_HEIGHT/PPM, gamecam);
-        gameTime = 0;
+
+        // Gameplay variables
+        spawnTimer = 100;
+        numEnemies = 30;
+        standardProportion = 0.85f;
+        strawHatProportion = 0.12f;
+        bossProportion = 0.03f;
+
 
         // Load our map and setup our map renderer
         TmxMapLoader maploader = new TmxMapLoader();
@@ -104,11 +126,11 @@ public class PlayScreen implements Screen {
 
         player = creator.getPlayer();
         zombies = new Array<Zombie>();
-        for(int i = 0; i < 20; i++) {
-            Vector2 pos = new Vector2(((float)(Math.random()*0.6f + 0.7f)*player.b2body.getPosition().x),
-                    (float)(Math.random()*0.6f + 0.7f)*player.b2body.getPosition().y);
-            zombies.add(new Zombie(this, pos));
-        }
+
+        music = ZombieTag.manager.get("audio/music/dungeon.mp3", Music.class);
+        music.setLooping(true);
+        music.setVolume(0.2f);
+        //music.play();
         hud = new Hud(this, game.batch);
         world.setContactListener(new WorldContactListener(game));
 
@@ -148,6 +170,14 @@ public class PlayScreen implements Screen {
         // Clear the lines which show us vision
         /*p1Array.clear();
         p2Array.clear();*/
+        spawnTimer += dt;
+        if (spawnTimer > 15) {
+            spawnEnemies((int)(standardProportion * numEnemies),
+                    (int)(strawHatProportion * numEnemies),
+                    (int)(bossProportion * numEnemies));
+            numEnemies += 10;
+            spawnTimer = 0;
+        }
 
         // Handle user input
         handleInput();
@@ -213,7 +243,7 @@ public class PlayScreen implements Screen {
         game.batch.begin();
 
         // Draw the player
-        if (!player.isDestroyed()) player.draw(game.batch);
+        player.draw(game.batch);
 
         // Draw the enemies
         for (Zombie zombie: zombies) {
@@ -236,7 +266,7 @@ public class PlayScreen implements Screen {
         game.batch.setProjectionMatrix(hud.stage.getCamera().combined);
         hud.stage.draw();
 
-        if (player.isDestroyed()) {
+        if (player.isRemovable()) {
             dispose();
             game.setScreen(new GameOverScreen(game));
         }
@@ -275,6 +305,7 @@ public class PlayScreen implements Screen {
         renderer.dispose();
         world.dispose();
         b2dr.dispose();
+        music.pause();
         //game.music.dispose();
     }
 
@@ -307,6 +338,60 @@ public class PlayScreen implements Screen {
         debugRenderer.line(start, end);
         debugRenderer.end();
         Gdx.gl.glLineWidth(1);
+    }
+
+
+
+    private void spawnEnemies(int standardNum, int strawHatNum, int bossNum) {
+
+        for(int i = 0; i < standardNum; i++) {
+
+            float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
+            float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
+            Vector2 pos = new Vector2(xPos, yPos);
+            Vector2 playerPos = player.b2body.getPosition();
+            Vector2 diff = pos.sub(playerPos);
+            diff.scl(1/diff.len());
+            diff.scl(500/PPM);
+            Vector2 spawn = playerPos.add(diff);
+            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x+ 0.1f, spawn.y + 0.1f);
+            if (hitBody == null) {
+                zombies.add(new StandardZombie(this, spawn));
+            }
+            hitBody = null;
+        }
+
+        for(int i = 0; i < strawHatNum; i++) {
+            float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
+            float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
+            Vector2 pos = new Vector2(xPos, yPos);
+            Vector2 playerPos = player.b2body.getPosition();
+            Vector2 diff = pos.sub(playerPos);
+            diff.scl(1/diff.len());
+            diff.scl(500/PPM);
+            Vector2 spawn = playerPos.add(diff);
+            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x + 0.1f, spawn.y + 0.1f);
+            if (hitBody == null) {
+                zombies.add(new StrawHat(this, spawn));
+            }
+            hitBody = null;
+        }
+
+        for(int i = 0; i < bossNum; i++) {
+            float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
+            float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
+            Vector2 pos = new Vector2(xPos, yPos);
+            Vector2 playerPos = player.b2body.getPosition();
+            Vector2 diff = pos.sub(playerPos);
+            diff.scl(1/diff.len());
+            diff.scl(500/PPM);
+            Vector2 spawn = playerPos.add(diff);
+            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x + 0.1f, spawn.y + 0.1f);
+            if (hitBody == null) {
+                zombies.add(new BossZombie(this, spawn));
+            }
+        hitBody = null;
+        }
     }
 
 }

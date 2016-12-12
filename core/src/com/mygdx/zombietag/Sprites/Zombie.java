@@ -14,7 +14,7 @@ import static com.mygdx.zombietag.ZombieTag.*;
 /**
  * Created by robbie on 2016/12/10.
  */
-public class Zombie extends Movable {
+public abstract class Zombie extends Movable {
 
     public enum State {WANDERING, CHASING, DEAD, ATTACKING}
     public State currentState;
@@ -23,20 +23,20 @@ public class Zombie extends Movable {
     public enum Movement {LEFT, RIGHT, UP, DOWN,}
     public Array<Movement> movement;
 
-    private Animation leftRunAnimation;
-    private Animation rightRunAnimation;
-    private Animation upRunAnimation;
-    private Animation downRunAnimation;
-    public Animation deathAnimation;
+    protected Animation leftRunAnimation;
+    protected Animation rightRunAnimation;
+    protected Animation upRunAnimation;
+    protected Animation downRunAnimation;
+    protected Animation deathAnimation;
 
     public float stateTimer;
-    private final static float MOVE_SPEED = 0.45f;
-    private final static float SPREAD_FACTOR = 300/PPM;
-    private Vector2 chaseOffset;
-    private float chaseTimer;
-    private boolean setToDestroy;
-    private boolean destroyed;
-    private boolean removable;
+    protected float MOVE_SPEED;
+    protected final static float SPREAD_FACTOR = 700/PPM;
+    protected Vector2 chaseOffset;
+    protected float chaseTimer;
+    protected boolean setToDestroy;
+    protected boolean destroyed;
+    protected boolean removable;
 
     public Zombie(PlayScreen screen, Vector2 spawn) {
         super(screen, spawn);
@@ -50,54 +50,12 @@ public class Zombie extends Movable {
         removable = false;
 
         movement = new Array<Movement>();
-
-        Texture leftRunSheet = new Texture("sprites/zombies/zombie_left.png");
-        Texture rightRunSheet = new Texture("sprites/zombies/zombie_right.png");
-        Texture upRunSheet = new Texture("sprites/zombies/zombie_up.png");
-        Texture downRunSheet = new Texture("sprites/zombies/zombie_down.png");
-        Texture deathSheet = new Texture("sprites/zombies/zombie_death.png");
-
-        Array<TextureRegion> frames = new Array<TextureRegion>();
-
-        // Create running animations
-        for (int i = 0; i < 6; i++) {
-            frames.add(new TextureRegion(leftRunSheet, i*32, 0, 32, 32));
-        }
-        leftRunAnimation = new Animation(1/12f, frames);
-
-        frames.clear();
-        for (int i = 0; i < 6; i++) {
-            frames.add(new TextureRegion(rightRunSheet, i*32, 0, 32, 32));
-        }
-        rightRunAnimation = new Animation(1/12f, frames);
-
-        frames.clear();
-        for (int i = 0; i < 6; i++) {
-            frames.add(new TextureRegion(upRunSheet, i*32, 0, 32, 32));
-        }
-        upRunAnimation = new Animation(1/12f, frames);
-
-        frames.clear();
-        for (int i = 0; i < 6; i++) {
-            frames.add(new TextureRegion(downRunSheet, i*32, 0, 32, 32));
-        }
-        downRunAnimation = new Animation(1/12f, frames);
-
-        // Create deathAnimation animation
-        frames.clear();
-        for (int i = 0; i < 15; i++) {
-            frames.add(new TextureRegion(deathSheet, i*32, 0, 32, 32));
-        }
-        deathAnimation = new Animation(1/60f, frames);
-
-        // Set initial values for the textures location, width and height
-        setBounds(0, 0, 32/PPM, 32/PPM);
-        setRegion(downRunAnimation.getKeyFrame(stateTimer, true));
     }
 
     public void handleMovement(float dt) {
         // Takes the vector difference of their positions and adds a small random amount to it
         // making zombies less accurate the closer they are (to avoid clumping)
+        chaseTimer += dt;
         if (chaseTimer > 3) {
             chaseOffset.set((float)Math.random()*SPREAD_FACTOR - 0.5f*SPREAD_FACTOR,
                     (float)Math.random()*SPREAD_FACTOR - 0.5f*SPREAD_FACTOR);
@@ -107,7 +65,7 @@ public class Zombie extends Movable {
         Vector2 playerPos = screen.getPlayer().b2body.getPosition();
         Vector2 zombiePos = b2body.getPosition();
         Vector2 diff = new Vector2(playerPos.x - zombiePos.x, playerPos.y - zombiePos.y);
-        if (diff.len() > 200/PPM) {
+        if (diff.len() > 150/PPM) {
             diff.add(chaseOffset.x, chaseOffset.y);
         }
         diff.scl(1/diff.len());
@@ -121,35 +79,6 @@ public class Zombie extends Movable {
         b2body.applyForceToCenter(new Vector2(force.x/25, force.y/25), true);
     }
 
-    public void update(float dt) {
-        stateTimer += dt;
-        if (setToDestroy && !destroyed) {
-            world.destroyBody(b2body);
-            stateTimer = 0;
-            destroyed = true;
-        }
-        else if (destroyed) {
-            if (stateTimer < deathAnimation.getAnimationDuration()) {
-                setRegion(getFrame());
-            }
-            else {
-                removable = true;
-            }
-        }
-        else if (!destroyed) {
-            handleMovement(dt);
-            setPosition(b2body.getPosition().x - getWidth() / 2,
-                    b2body.getPosition().y - getHeight() / 2 + 6/PPM);
-            setRegion(getFrame());
-
-            if (currentState != previousState) {
-                stateTimer = 0;
-            }
-
-            // Update previous state
-            previousState = currentState;
-        }
-    }
 
     public State getState(){
         if(setToDestroy || destroyed) {
@@ -208,25 +137,6 @@ public class Zombie extends Movable {
         return region;
     }
 
-    /**
-     * Define the player in Box2D
-     */
-    public void define() {
-        BodyDef bdef = new BodyDef();
-        bdef.position.set(getX(), getY());
-        bdef.type = BodyDef.BodyType.DynamicBody;
-        b2body = world.createBody(bdef);
-
-        FixtureDef fdef = new FixtureDef();
-        CircleShape shape = new CircleShape();
-        shape.setRadius(5 / PPM);
-        fdef.filter.categoryBits = ZOMBIE_BIT;
-        fdef.filter.maskBits = PLAYER_BIT| TRAP_BIT | WALL_BIT | ZOMBIE_BIT | POWER_BIT | PIT_BIT;
-        fdef.shape = shape;
-        fdef.density = 1f;
-        fdef.friction = 1f;
-        b2body.createFixture(fdef).setUserData(this);
-    }
 
     public void draw(Batch batch) {
         super.draw(batch);

@@ -1,5 +1,6 @@
 package com.mygdx.zombietag.Tools;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.mygdx.zombietag.Sprites.Player;
@@ -89,6 +90,14 @@ public class WorldContactListener implements ContactListener {
                 }
                 else {
                     ((Player)fixB.getUserData()).reduceHealth(0.4f);
+                }
+                break;
+            case PLAYER_BIT | TREE_BIT:
+                if (fixA.getUserData() instanceof Player) {
+                    ((Player)fixA.getUserData()).increaseHealth(0.4f);
+                }
+                else {
+                    ((Player)fixB.getUserData()).increaseHealth(0.4f);
                 }
                 break;
 
