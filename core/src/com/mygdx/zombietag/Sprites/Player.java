@@ -27,6 +27,8 @@ public class Player extends Sprite {
     public  PlayScreen screen;
     private World world;
     public Body b2body;
+    public float health;
+    public float mana;
 
     // Character animations
     public Animation leftRunAnimation;
@@ -47,6 +49,7 @@ public class Player extends Sprite {
     private final static float moveSpeed = 0.95f;
     private boolean setToDestroy;
     private boolean destroyed;
+    private boolean removable;
 
     public Player(PlayScreen screen, float x, float y) {
         setPosition(x, y);
@@ -58,14 +61,17 @@ public class Player extends Sprite {
         symbolTime = 0;
         setToDestroy = false;
         destroyed = false;
+        removable = false;
         power = null;
         powerCooldown = 0;
+        health = 1f;
+        mana = 1f;
 
         movement = new Array<Movement>();
 
         Texture movementSheet = new Texture("sprites/player/player_movement.png");
         Texture symbolSheet = new Texture("powers/power_symbol.png");
-        //Texture deathSheet = new Texture("sprites/player/player_death");
+        Texture deathSheet = new Texture("sprites/player/player_death.png");
 
         Array<TextureRegion> frames = new Array<TextureRegion>();
 
@@ -97,10 +103,10 @@ public class Player extends Sprite {
 
         // DEATH ANIMATION
 
-        /*for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 9; i++) {
             frames.add(new TextureRegion(deathSheet, i*32, 0, 32, 32));
-        }*/
-        //deathAnimation = new Animation(1/12f, frames);
+        }
+        deathAnimation = new Animation(1/12f, frames);
 
 
 
@@ -150,12 +156,28 @@ public class Player extends Sprite {
     public void update(float dt) {
         if (setToDestroy && !destroyed) {
             world.destroyBody(b2body);
+            stateTimer = 0;
             destroyed = true;
+        }
+        else if (destroyed) {
+            if (stateTimer < deathAnimation.getAnimationDuration()) {
+                setRegion(getFrame(dt));
+            }
+            else {
+                removable = true;
+            }
         }
         else if (!destroyed){
             // Get monkeys current state
             symbolTime += dt;
             powerCooldown -= dt;
+            if (health <= 0) {
+                setToDestroy();
+            }
+            if (mana < 1) {
+                mana += (1 / 3.5f) * dt;
+            }
+            System.out.println();
             currentState = getState();
             if (power != null) power.update(dt);
             handleMovement(dt);
@@ -167,6 +189,8 @@ public class Player extends Sprite {
 
     public void push() {
         if (power == null && powerCooldown <= 0) {
+            mana = 0f;
+            screen.hud.manaTime = 0;
             Vector2 dir = new Vector2(0, 0);
             if (currentAnimation == rightRunAnimation) {
                 dir.add(1, 0);
@@ -187,7 +211,7 @@ public class Player extends Sprite {
     }
 
     public State getState(){
-        if(destroyed) {
+        if(setToDestroy || destroyed) {
             return State.DEAD;
         }
         if (b2body.getLinearVelocity().x == 0 && b2body.getLinearVelocity().y == 0) {
@@ -201,9 +225,9 @@ public class Player extends Sprite {
 
         // Get keyFrame corresponding to currentState
         switch(currentState) {
-            /*case DEAD:
+            case DEAD:
                 region = deathAnimation.getKeyFrame(stateTimer);
-                break;*/
+                break;
             case POWERING:
             case RUNNING:
                 if (Math.abs(b2body.getLinearVelocity().len()) > 0.1) {
@@ -292,5 +316,17 @@ public class Player extends Sprite {
 
     public void removePower() {
         power = null;
+    }
+
+    public void reduceHealth(float value) {
+        this.health -= value;
+    }
+
+    public float getHealth() {
+        return health;
+    }
+
+    public float getMana() {
+        return mana;
     }
 }

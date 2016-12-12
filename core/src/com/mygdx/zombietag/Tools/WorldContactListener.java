@@ -69,12 +69,29 @@ public class WorldContactListener implements ContactListener {
                 break;
             case PLAYER_BIT | TRAP_BIT:
                 if (fixA.getUserData() instanceof Player) {
-                    ((Player)fixA.getUserData()).setToDestroy();
+                    ((Player)fixA.getUserData()).reduceHealth(0.4f);
                 }
                 else {
-                    ((Player)fixB.getUserData()).setToDestroy();
+                    ((Player)fixB.getUserData()).reduceHealth(0.4f);
                 }
                 break;
+            case PLAYER_BIT | ZOMBIE_BIT:
+                if (fixA.getUserData() instanceof Player) {
+                    ((Player)fixA.getUserData()).reduceHealth(0.2f);
+                }
+                else {
+                    ((Player)fixB.getUserData()).reduceHealth(0.2f);
+                }
+                break;
+            case PLAYER_BIT | BIG_ZOMBIE_BIT:
+                if (fixA.getUserData() instanceof Player) {
+                    ((Player)fixA.getUserData()).reduceHealth(0.4f);
+                }
+                else {
+                    ((Player)fixB.getUserData()).reduceHealth(0.4f);
+                }
+                break;
+
         }
     }
 

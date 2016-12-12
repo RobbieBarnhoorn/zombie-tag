@@ -19,7 +19,6 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.mygdx.zombietag.Sprites.Movable;
 import com.mygdx.zombietag.Sprites.Player;
 import com.mygdx.zombietag.Sprites.Zombie;
 import com.mygdx.zombietag.Tools.B2WorldCreator;
@@ -36,6 +35,7 @@ public class PlayScreen implements Screen {
     private ZombieTag game;
     private OrthographicCamera gamecam;
     private Viewport gameport;
+    public Hud hud;
     private float gameTime;
 
     // Tiled map variables
@@ -109,7 +109,7 @@ public class PlayScreen implements Screen {
                     (float)(Math.random()*0.6f + 0.7f)*player.b2body.getPosition().y);
             zombies.add(new Zombie(this, pos));
         }
-
+        hud = new Hud(this, game.batch);
         world.setContactListener(new WorldContactListener(game));
 
 
@@ -160,11 +160,13 @@ public class PlayScreen implements Screen {
 
         // Update the enemies
         for(Zombie zombie: zombies) {
-            /*if (zombie.destroyed() && zombie.stateTimer < zombie.deathAnimation.getAnimationDuration()) {
+            if (zombie.removable()) {
                 zombies.removeValue(zombie, true);
-            }*/
+            }
             zombie.update(dt);
         }
+
+        hud.update(dt);
 
         // Make our camera track our players position smoothly
         Vector3 cameraPosition = new Vector3(gamecam.position);
@@ -229,6 +231,10 @@ public class PlayScreen implements Screen {
        /* for (int i = 0; i < p1Array.size; i++) {
             drawDebugLine(p1Array.get(i), p2Array.get(i), gamecam.combined);
         }*/
+
+        //Set our batch to now draw what the Hud camera sees.
+        game.batch.setProjectionMatrix(hud.stage.getCamera().combined);
+        hud.stage.draw();
 
         if (player.isDestroyed()) {
             dispose();

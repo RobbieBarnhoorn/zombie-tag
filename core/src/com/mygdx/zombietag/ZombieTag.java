@@ -24,6 +24,7 @@ public class ZombieTag extends Game {
     public static final int WALL_BIT = 8;
     public static final int POWER_BIT = 16;
     public static final int PIT_BIT = 32;
+    public static final int BIG_ZOMBIE_BIT = 64;
 
 
 

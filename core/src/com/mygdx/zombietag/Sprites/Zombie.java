@@ -36,6 +36,7 @@ public class Zombie extends Movable {
     private float chaseTimer;
     private boolean setToDestroy;
     private boolean destroyed;
+    private boolean removable;
 
     public Zombie(PlayScreen screen, Vector2 spawn) {
         super(screen, spawn);
@@ -46,6 +47,7 @@ public class Zombie extends Movable {
                 (float)Math.random()*SPREAD_FACTOR - 0.5f*SPREAD_FACTOR);
         setToDestroy = false;
         destroyed = false;
+        removable = false;
 
         movement = new Array<Movement>();
 
@@ -86,7 +88,7 @@ public class Zombie extends Movable {
         for (int i = 0; i < 15; i++) {
             frames.add(new TextureRegion(deathSheet, i*32, 0, 32, 32));
         }
-        deathAnimation = new Animation(1/8f, frames);
+        deathAnimation = new Animation(1/60f, frames);
 
         // Set initial values for the textures location, width and height
         setBounds(0, 0, 32/PPM, 32/PPM);
@@ -126,8 +128,13 @@ public class Zombie extends Movable {
             stateTimer = 0;
             destroyed = true;
         }
-        else if (destroyed && stateTimer < deathAnimation.getAnimationDuration()) {
-            setRegion(getFrame());
+        else if (destroyed) {
+            if (stateTimer < deathAnimation.getAnimationDuration()) {
+                setRegion(getFrame());
+            }
+            else {
+                removable = true;
+            }
         }
         else if (!destroyed) {
             handleMovement(dt);
@@ -231,6 +238,10 @@ public class Zombie extends Movable {
 
     public boolean destroyed() {
         return destroyed;
+    }
+
+    public boolean removable() {
+        return removable;
     }
 
 }
