@@ -33,6 +33,7 @@ public class Player extends Sprite {
     public float health;
     private float treeTime;
     public float mana;
+    public boolean falling;
 
     // Character animations
     public Animation leftRunAnimation;
@@ -41,6 +42,7 @@ public class Player extends Sprite {
     public Animation downRunAnimation;
     public Animation currentAnimation;
     public Animation previousAnimation;
+    public Animation fallingAnimation;
     public Animation deathAnimation;
 
     // Power animations
@@ -51,7 +53,9 @@ public class Player extends Sprite {
 
     private Sound footsteps;
     private Sound powerSymbol;
-    Sound tree;
+    private Sound deathSound;
+    private Sound hurtSound;
+    private Sound tree;
 
     private float stateTimer;
     private final static float moveSpeed = 0.95f;
@@ -79,6 +83,7 @@ public class Player extends Sprite {
 
         Texture movementSheet = new Texture("sprites/player/player_movement.png");
         Texture symbolSheet = new Texture("powers/power_symbol.png");
+        Texture fallingSheet = new Texture("sprites/player/linglingfall.png");
         Texture deathSheet = new Texture("sprites/player/player_death.png");
 
         Array<TextureRegion> frames = new Array<TextureRegion>();
@@ -111,11 +116,17 @@ public class Player extends Sprite {
 
         // DEATH ANIMATION
 
+        frames.clear();
         for (int i = 0; i < 9; i++) {
             frames.add(new TextureRegion(deathSheet, i*32, 0, 32, 32));
         }
         deathAnimation = new Animation(1/12f, frames);
 
+        frames.clear();
+        for (int i = 0; i < 13; i++) {
+            frames.add(new TextureRegion(fallingSheet, 0, i*32, 32, 32));
+        }
+        fallingAnimation = new Animation(1/12f, frames);
 
 
         // POWER SYMBOL ANIMATION
@@ -134,6 +145,8 @@ public class Player extends Sprite {
 
         powerSymbol = ZombieTag.manager.get("audio/sounds/power_symbol.mp3", Sound.class);
         tree = ZombieTag.manager.get("audio/sounds/tree.mp3", Sound.class);
+        deathSound = ZombieTag.manager.get("audio/sounds/player_death.mp3", Sound.class);
+        hurtSound = ZombieTag.manager.get("audio/sounds/player_hurt.mp3", Sound.class);
 
         // Define the player in Box2D
         definePlayer();
@@ -173,6 +186,7 @@ public class Player extends Sprite {
             world.destroyBody(b2body);
             stateTimer = 0;
             destroyed = true;
+            deathSound.play(0.1f);
         }
         else if (destroyed) {
             if (stateTimer < deathAnimation.getAnimationDuration()) {
@@ -193,7 +207,6 @@ public class Player extends Sprite {
             if (mana < 1) {
                 mana += (1 / 3.5f) * dt;
             }
-            System.out.println();
             currentState = getState();
             if (power != null) power.update(dt);
             handleMovement(dt);
@@ -240,10 +253,16 @@ public class Player extends Sprite {
     public TextureRegion getFrame(float dt) {
         TextureRegion region;
 
+        currentState = getState();
         // Get keyFrame corresponding to currentState
         switch(currentState) {
             case DEAD:
-                region = deathAnimation.getKeyFrame(stateTimer);
+                if (falling) {
+                    region = fallingAnimation.getKeyFrame(stateTimer);
+                }
+                else {
+                    region = deathAnimation.getKeyFrame(stateTimer);
+                }
                 break;
             case POWERING:
             case RUNNING:
@@ -337,6 +356,7 @@ public class Player extends Sprite {
 
     public void reduceHealth(float value) {
         this.health -= value;
+        hurtSound.play(0.1f);
     }
 
     public void increaseHealth(float value) {
@@ -357,5 +377,10 @@ public class Player extends Sprite {
 
     public boolean isRemovable() {
         return removable;
+    }
+
+    public void fall() {
+        falling = true;
+        setToDestroy();
     }
 }

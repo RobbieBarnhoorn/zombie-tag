@@ -44,6 +44,10 @@ public class ZombieTag extends Game {
         manager.load("audio/sounds/power_symbol.mp3", Sound.class);
         manager.load("audio/sounds/big_growl_2.mp3", Sound.class);
         manager.load("audio/sounds/tree.mp3", Sound.class);
+        manager.load("audio/sounds/whoosh.mp3", Sound.class);
+        manager.load("audio/sounds/player_death.mp3", Sound.class);
+        manager.load("audio/sounds/player_hurt.mp3", Sound.class);
+
         manager.load("audio/music/dungeon.mp3", Music.class);
         manager.load("audio/music/game_over.mp3", Music.class);
         manager.finishLoading();

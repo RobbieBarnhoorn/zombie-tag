@@ -23,6 +23,7 @@ import com.mygdx.zombietag.Sprites.*;
 import com.mygdx.zombietag.Tools.B2WorldCreator;
 import com.mygdx.zombietag.Tools.WorldContactListener;
 import com.mygdx.zombietag.ZombieTag;
+
 import static com.mygdx.zombietag.ZombieTag.*;
 
 /**
@@ -167,15 +168,12 @@ public class PlayScreen implements Screen {
     }
 
     public void update(float dt) {
-        // Clear the lines which show us vision
-        /*p1Array.clear();
-        p2Array.clear();*/
         spawnTimer += dt;
         if (spawnTimer > 15) {
             spawnEnemies((int)(standardProportion * numEnemies),
                     (int)(strawHatProportion * numEnemies),
                     (int)(bossProportion * numEnemies));
-            numEnemies += 10;
+            numEnemies += 5;
             spawnTimer = 0;
         }
 
@@ -255,12 +253,6 @@ public class PlayScreen implements Screen {
 
         // Render our Box2DDebugLines
         //b2dr.render(world, gamecam.combined);
-
-
-        // Render our vision lines
-       /* for (int i = 0; i < p1Array.size; i++) {
-            drawDebugLine(p1Array.get(i), p2Array.get(i), gamecam.combined);
-        }*/
 
         //Set our batch to now draw what the Hud camera sees.
         game.batch.setProjectionMatrix(hud.stage.getCamera().combined);
@@ -344,54 +336,67 @@ public class PlayScreen implements Screen {
 
     private void spawnEnemies(int standardNum, int strawHatNum, int bossNum) {
 
-        for(int i = 0; i < standardNum; i++) {
+        for (int i = 0; i < standardNum; i++) {
+            spawn("standard");
+        }
 
-            float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
-            float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
-            Vector2 pos = new Vector2(xPos, yPos);
-            Vector2 playerPos = player.b2body.getPosition();
-            Vector2 diff = pos.sub(playerPos);
-            diff.scl(1/diff.len());
-            diff.scl(500/PPM);
-            Vector2 spawn = playerPos.add(diff);
-            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x+ 0.1f, spawn.y + 0.1f);
-            if (hitBody == null) {
+        for (int i = 0; i < strawHatNum; i++) {
+            spawn("strawhat");
+        }
+
+        for (int i = 0; i < bossNum; i++) {
+            spawn("boss");
+        }
+    }
+
+    private void spawn(String type) {
+        float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
+        float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
+        Vector2 pos = new Vector2(xPos, yPos);
+        Vector2 playerPos = player.b2body.getPosition();
+        Vector2 diff = pos.sub(playerPos);
+        diff.scl(1/diff.len());
+        diff.scl(500/PPM);
+        Vector2 spawn = playerPos.add(diff);
+        world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x+ 0.1f, spawn.y + 0.1f);
+        if (hitBody == null) {
+            if (type.equals("standard")) {
                 zombies.add(new StandardZombie(this, spawn));
-            }
-            hitBody = null;
-        }
-
-        for(int i = 0; i < strawHatNum; i++) {
-            float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
-            float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
-            Vector2 pos = new Vector2(xPos, yPos);
-            Vector2 playerPos = player.b2body.getPosition();
-            Vector2 diff = pos.sub(playerPos);
-            diff.scl(1/diff.len());
-            diff.scl(500/PPM);
-            Vector2 spawn = playerPos.add(diff);
-            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x + 0.1f, spawn.y + 0.1f);
-            if (hitBody == null) {
+            } else if (type.equals("strawhat")) {
                 zombies.add(new StrawHat(this, spawn));
-            }
-            hitBody = null;
-        }
-
-        for(int i = 0; i < bossNum; i++) {
-            float xPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().x;
-            float yPos = (float)(Math.random()*0.6f + 0.8f)*player.b2body.getPosition().y;
-            Vector2 pos = new Vector2(xPos, yPos);
-            Vector2 playerPos = player.b2body.getPosition();
-            Vector2 diff = pos.sub(playerPos);
-            diff.scl(1/diff.len());
-            diff.scl(500/PPM);
-            Vector2 spawn = playerPos.add(diff);
-            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x + 0.1f, spawn.y + 0.1f);
-            if (hitBody == null) {
+            } else {
                 zombies.add(new BossZombie(this, spawn));
             }
-        hitBody = null;
         }
+        else {
+            hitBody = null;
+            spawn.sub(300/PPM, 0);
+            world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x+ 0.1f, spawn.y + 0.1f);
+            if (hitBody == null) {
+                if (type.equals("standard")) {
+                    zombies.add(new StandardZombie(this, spawn));
+                } else if (type.equals("strawhat")) {
+                    zombies.add(new StrawHat(this, spawn));
+                } else {
+                    zombies.add(new BossZombie(this, spawn));
+                }
+            }
+            else {
+                hitBody = null;
+                spawn.add(600/PPM, 0);
+                world.QueryAABB(callback, spawn.x - 0.1f, spawn.y - 0.1f, spawn.x+ 0.1f, spawn.y + 0.1f);
+                if (hitBody == null) {
+                    if (type.equals("standard")) {
+                        zombies.add(new StandardZombie(this, spawn));
+                    } else if (type.equals("strawhat")) {
+                        zombies.add(new StrawHat(this, spawn));
+                    } else {
+                        zombies.add(new BossZombie(this, spawn));
+                    }
+                }
+            }
+        }
+        hitBody = null;
     }
 
 }

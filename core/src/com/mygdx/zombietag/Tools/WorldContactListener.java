@@ -62,10 +62,10 @@ public class WorldContactListener implements ContactListener {
                 break;
             case PLAYER_BIT | PIT_BIT:
                 if (fixA.getUserData() instanceof Player) {
-                    ((Player)fixA.getUserData()).setToDestroy();
+                    ((Player)fixA.getUserData()).fall();
                 }
                 else {
-                    ((Player)fixB.getUserData()).setToDestroy();
+                    ((Player)fixB.getUserData()).fall();
                 }
                 break;
             case PLAYER_BIT | TRAP_BIT:

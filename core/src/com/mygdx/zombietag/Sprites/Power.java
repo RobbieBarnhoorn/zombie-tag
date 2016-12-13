@@ -1,5 +1,6 @@
 package com.mygdx.zombietag.Sprites;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -8,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 import com.mygdx.zombietag.Screens.PlayScreen;
+import com.mygdx.zombietag.ZombieTag;
 
 import static com.mygdx.zombietag.ZombieTag.*;
 
@@ -24,6 +26,8 @@ public class Power extends Movable {
     private boolean setToDestroy;
     private boolean destroyed;
     private final static float VELOCITY = 3f;
+
+    private Sound whoosh;
 
 
     public Power(PlayScreen screen, Player player, Vector2 spawn, Vector2 dir) {
@@ -54,6 +58,9 @@ public class Power extends Movable {
         b2body.applyLinearImpulse(dir.scl(VELOCITY), b2body.getWorldCenter(), true);
         setToDestroy = false;
         destroyed = false;
+
+        whoosh = ZombieTag.manager.get("audio/sounds/whoosh.mp3", Sound.class);
+        whoosh.play();
     }
 
     public void update(float dt) {
