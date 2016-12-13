@@ -131,7 +131,7 @@ public class PlayScreen implements Screen {
         music = ZombieTag.manager.get("audio/music/dungeon.mp3", Music.class);
         music.setLooping(true);
         music.setVolume(0.2f);
-        //music.play();
+        music.play();
         hud = new Hud(this, game.batch);
         world.setContactListener(new WorldContactListener(game));
 

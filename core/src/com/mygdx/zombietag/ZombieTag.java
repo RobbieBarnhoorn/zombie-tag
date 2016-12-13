@@ -6,6 +6,7 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.mygdx.zombietag.Screens.IntroScreen;
 import com.mygdx.zombietag.Screens.PlayScreen;
 
 public class ZombieTag extends Game {
@@ -52,7 +53,7 @@ public class ZombieTag extends Game {
         manager.load("audio/music/game_over.mp3", Music.class);
         manager.finishLoading();
 
-        setScreen(new PlayScreen(this));
+        setScreen(new IntroScreen(this));
 
 	}
 
